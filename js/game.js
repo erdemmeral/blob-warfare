@@ -524,33 +524,55 @@ class Game {
             
             // Check collision with players (only if not fired by the same player)
             if (!projectile.markedForDeletion) {
-                for (const player of allPlayers) {
-                    // Skip if this is the projectile owner
-                    if (player === projectile.owner) continue;
-                    
-                    if (circleCollision(
+                // First check collision with player
+                if (projectile.owner !== this.player && 
+                    circleCollision(
                         projectile.x, projectile.y, projectile.radius,
-                        player.x, player.y, player.radius
+                        this.player.x, this.player.y, this.player.radius
                     )) {
-                        // Damage player - increased effect
-                        const damageAmount = projectile.damage * 0.2; // Increased from 0.1 to 0.2
-                        player.radius -= damageAmount;
+                    // Damage player - increased effect
+                    const damageAmount = projectile.damage * 0.5; // Increased damage significantly
+                    this.player.radius -= damageAmount;
+                    
+                    // Create hit effect
+                    this.createHitEffect(this.player.x, this.player.y);
+                    
+                    // Log damage for debugging
+                    console.log(`Player hit by projectile for ${damageAmount.toFixed(1)} damage. New radius: ${this.player.radius.toFixed(1)}`);
+                    
+                    // If player gets too small, they die
+                    if (this.player.radius < 10 && !this.gameOver) {
+                        console.log(`Game over: Player (radius ${this.player.radius.toFixed(1)}) killed by projectile from ${projectile.owner ? (projectile.owner.nickname || projectile.owner.name || 'bot') : 'unknown'}`);
+                        this.endGame("Killed by projectile");
+                    }
+                    
+                    // Remove projectile
+                    projectile.markedForDeletion = true;
+                }
+                
+                // Then check collision with bots and remote players
+                if (!projectile.markedForDeletion) {
+                    for (const player of [...this.bots, ...this.remotePlayers]) {
+                        // Skip if this is the projectile owner
+                        if (player === projectile.owner) continue;
                         
-                        // Create hit effect
-                        this.createHitEffect(player.x, player.y);
-                        
-                        // Log damage for debugging
-                        console.log(`Player ${player === this.player ? 'user' : (player.nickname || player.name || 'bot')} hit by projectile for ${damageAmount.toFixed(1)} damage. New radius: ${player.radius.toFixed(1)}`);
-                        
-                        // If player gets too small, they die
-                        if (player.radius < 10) {
-                            if (player === this.player && !this.gameOver) {
-                                console.log(`Game over: Player (radius ${this.player.radius.toFixed(1)}) killed by projectile from ${projectile.owner ? (projectile.owner.nickname || projectile.owner.name || 'bot') : 'unknown'}`);
-                                this.endGame("Killed by projectile");
-                            } else if (player.isRemote) {
-                                // Remote players are handled by their own clients
-                            } else {
-                                // Bot dies
+                        if (circleCollision(
+                            projectile.x, projectile.y, projectile.radius,
+                            player.x, player.y, player.radius
+                        )) {
+                            // Damage player - increased effect
+                            const damageAmount = projectile.damage * 0.5; // Increased damage significantly
+                            player.radius -= damageAmount;
+                            
+                            // Create hit effect
+                            this.createHitEffect(player.x, player.y);
+                            
+                            // Log damage for debugging
+                            console.log(`${player.nickname || player.name || 'bot'} hit by projectile for ${damageAmount.toFixed(1)} damage. New radius: ${player.radius.toFixed(1)}`);
+                            
+                            // If player gets too small, they die
+                            if (player.radius < 10) {
+                                // Bot or remote player dies
                                 player.markedForDeletion = true;
                                 
                                 // Award points to the shooter
@@ -561,11 +583,11 @@ class Game {
                                     }
                                 }
                             }
+                            
+                            // Remove projectile
+                            projectile.markedForDeletion = true;
+                            break;
                         }
-                        
-                        // Remove projectile
-                        projectile.markedForDeletion = true;
-                        break;
                     }
                 }
             }
@@ -932,7 +954,7 @@ class Game {
         const dist = distance(player.x, player.y, bot.x, bot.y);
         const collisionThreshold = player.radius + bot.radius;
         
-        if (dist < collisionThreshold) {
+        if (dist < collisionThreshold * 0.9) { // Added buffer for more reliable collisions
             // Log collision for debugging
             if (this.debugMode) {
                 console.log(`Collision between player (${player.radius.toFixed(1)}) and bot ${bot.name} (${bot.radius.toFixed(1)})`);
@@ -965,7 +987,7 @@ class Game {
         const dist = distance(player.x, player.y, remotePlayer.x, remotePlayer.y);
         const collisionThreshold = player.radius + remotePlayer.radius;
         
-        if (dist < collisionThreshold) {
+        if (dist < collisionThreshold * 0.9) { // Added buffer for more reliable collisions
             // Log collision for debugging
             if (this.debugMode) {
                 console.log(`Collision between player (${player.radius.toFixed(1)}) and ${remotePlayer.nickname} (${remotePlayer.radius.toFixed(1)})`);

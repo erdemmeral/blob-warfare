@@ -23,8 +23,8 @@ function circleCollision(x1, y1, r1, x2, y2, r2) {
     // Calculate the distance between centers
     const dist = distance(x1, y1, x2, y2);
     // Return true if the distance is less than the sum of radii
-    // Remove the buffer to ensure collision detection is more accurate
-    return dist < (r1 + r2);
+    // Add a small buffer (0.9) to make collisions more reliable
+    return dist <= (r1 + r2) * 0.9;
 }
 
 // Clamp a value between min and max
