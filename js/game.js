@@ -377,10 +377,10 @@ class Game {
                     remotePlayer.x, remotePlayer.y, remotePlayer.radius,
                     bot.x, bot.y, bot.radius
                 )) {
-                    if (remotePlayer.radius > bot.radius * 1.2) {
+                    if (remotePlayer.radius > bot.radius * 1.05) {
                         // Remote player eats bot
                         bot.markedForDeletion = true;
-                    } else if (bot.radius > remotePlayer.radius * 1.2) {
+                    } else if (bot.radius > remotePlayer.radius * 1.05) {
                         // Bot eats remote player
                         bot.score += Math.floor(remotePlayer.score || 0);
                         bot.radius += remotePlayer.radius * 0.2;
@@ -395,7 +395,7 @@ class Game {
                     bot.x, bot.y, bot.radius,
                     otherBot.x, otherBot.y, otherBot.radius
                 )) {
-                    if (bot.radius > otherBot.radius * 1.2) {
+                    if (bot.radius > otherBot.radius * 1.05) {
                         // This bot eats the other bot
                         bot.score += Math.floor(otherBot.score);
                         bot.radius += otherBot.radius * 0.2;
@@ -478,14 +478,14 @@ class Game {
                 enemy.x, enemy.y, enemy.radius
             )) {
                 // If player is bigger, eat the enemy
-                if (this.player.radius > enemy.radius * 1.2) {
+                if (this.player.radius > enemy.radius * 1.05) {
                     this.player.score += enemy.value;
                     this.player.radius += enemy.radius * 0.2;
                     // Adjust player speed based on size
                     this.player.updateSpeed();
                     this.updateScore();
                     enemy.markedForDeletion = true;
-                } else if (!this.gameOver) {
+                } else if (enemy.radius > this.player.radius * 1.05 && !this.gameOver) {
                     // If enemy is bigger or similar size, game over
                     console.log(`Game over: Player (radius ${this.player.radius.toFixed(1)}) eaten by enemy (radius ${enemy.radius.toFixed(1)})`);
                     this.endGame("Eaten by enemy blob");
@@ -632,8 +632,9 @@ class Game {
                 
                 const dist = distance(tower.x, tower.y, player.x, player.y);
                 if (dist < closestDistance) {
-                    // Only target players that are smaller than the owner
-                    if (owner.radius > player.radius * 1.2) {
+                    // If the owner is the player, allow attacking any bot regardless of size
+                    // Otherwise, only target players that are smaller than the owner
+                    if (owner === this.player || owner.radius > player.radius * 1.2) {
                         closestDistance = dist;
                         closestPlayer = player;
                     }
@@ -927,10 +928,11 @@ class Game {
 
     // Helper method to handle collision between player and bot
     handlePlayerBotCollision(player, bot) {
-        if (circleCollision(
-            player.x, player.y, player.radius,
-            bot.x, bot.y, bot.radius
-        )) {
+        // Force collision check with exact distance calculation
+        const dist = distance(player.x, player.y, bot.x, bot.y);
+        const collisionThreshold = player.radius + bot.radius;
+        
+        if (dist < collisionThreshold) {
             // Log collision for debugging
             if (this.debugMode) {
                 console.log(`Collision between player (${player.radius.toFixed(1)}) and bot ${bot.name} (${bot.radius.toFixed(1)})`);
@@ -938,21 +940,19 @@ class Game {
             
             // Always log collisions to help diagnose issues
             console.log(`Collision: Player (${player.radius.toFixed(1)}) and bot ${bot.name} (${bot.radius.toFixed(1)})`);
+            console.log(`Distance: ${dist.toFixed(1)}, Sum of radii: ${collisionThreshold.toFixed(1)}`);
             
-            // Calculate exact distance for more precise collision detection
-            const dist = distance(player.x, player.y, bot.x, bot.y);
-            console.log(`Distance: ${dist.toFixed(1)}, Sum of radii: ${(player.radius + bot.radius).toFixed(1)}`);
-            
-            if (player.radius > bot.radius * 1.1) {
-                // Player eats bot - reduced size advantage requirement from 1.2 to 1.1
+            // Reduce the size advantage needed to eat
+            if (player.radius > bot.radius * 1.05) {
+                // Player eats bot - reduced size advantage requirement to just 5%
                 console.log(`Player eats bot ${bot.name}`);
                 player.score += Math.floor(bot.score);
                 player.radius += bot.radius * 0.2;
                 player.updateSpeed();
                 this.updateScore();
                 bot.markedForDeletion = true;
-            } else if (bot.radius > player.radius * 1.1 && !this.gameOver) {
-                // Bot eats player - reduced size advantage requirement from 1.2 to 1.1
+            } else if (bot.radius > player.radius * 1.05 && !this.gameOver) {
+                // Bot eats player - reduced size advantage requirement to just 5%
                 console.log(`Game over: Player (radius ${player.radius.toFixed(1)}) eaten by bot ${bot.name} (radius ${bot.radius.toFixed(1)})`);
                 this.endGame("Eaten by " + bot.name);
             }
@@ -961,10 +961,11 @@ class Game {
     
     // Helper method to handle collision between player and remote player
     handlePlayerRemotePlayerCollision(player, remotePlayer) {
-        if (circleCollision(
-            player.x, player.y, player.radius,
-            remotePlayer.x, remotePlayer.y, remotePlayer.radius
-        )) {
+        // Force collision check with exact distance calculation
+        const dist = distance(player.x, player.y, remotePlayer.x, remotePlayer.y);
+        const collisionThreshold = player.radius + remotePlayer.radius;
+        
+        if (dist < collisionThreshold) {
             // Log collision for debugging
             if (this.debugMode) {
                 console.log(`Collision between player (${player.radius.toFixed(1)}) and ${remotePlayer.nickname} (${remotePlayer.radius.toFixed(1)})`);
@@ -972,13 +973,11 @@ class Game {
             
             // Always log collisions to help diagnose issues
             console.log(`Collision: Player (${player.radius.toFixed(1)}) and ${remotePlayer.nickname} (${remotePlayer.radius.toFixed(1)})`);
+            console.log(`Distance: ${dist.toFixed(1)}, Sum of radii: ${collisionThreshold.toFixed(1)}`);
             
-            // Calculate exact distance for more precise collision detection
-            const dist = distance(player.x, player.y, remotePlayer.x, remotePlayer.y);
-            console.log(`Distance: ${dist.toFixed(1)}, Sum of radii: ${(player.radius + remotePlayer.radius).toFixed(1)}`);
-            
-            if (player.radius > remotePlayer.radius * 1.1) {
-                // Player eats remote player - reduced size advantage requirement from 1.2 to 1.1
+            // Reduce the size advantage needed to eat
+            if (player.radius > remotePlayer.radius * 1.05) {
+                // Player eats remote player - reduced size advantage requirement to just 5%
                 console.log(`Player eats remote player ${remotePlayer.nickname}`);
                 player.score += Math.floor(remotePlayer.score || 0);
                 player.radius += remotePlayer.radius * 0.2;
@@ -992,8 +991,8 @@ class Game {
                 if (this.multiplayer) {
                     this.multiplayer.sendPlayerState();
                 }
-            } else if (remotePlayer.radius > player.radius * 1.1 && !this.gameOver) {
-                // Remote player eats player - reduced size advantage requirement from 1.2 to 1.1
+            } else if (remotePlayer.radius > player.radius * 1.05 && !this.gameOver) {
+                // Remote player eats player - reduced size advantage requirement to just 5%
                 console.log(`Game over: Player (radius ${player.radius.toFixed(1)}) eaten by remote player ${remotePlayer.nickname} (radius ${remotePlayer.radius.toFixed(1)})`);
                 this.endGame("Eaten by " + remotePlayer.nickname);
             }
