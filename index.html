@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blob Warfare</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <div id="ui">
+            <div id="score">Score: 0</div>
+            <div id="towers">
+                <button id="basicTower">Basic Tower (10)<br><small>Key: 1</small></button>
+                <button id="fastTower">Fast Tower (25)<br><small>Key: 2</small></button>
+                <button id="heavyTower">Heavy Tower (50)<br><small>Key: 3</small></button>
+            </div>
+        </div>
+        <div id="gameOver" class="hidden">
+            <h2>Game Over</h2>
+            <p>Your final score: <span id="finalScore">0</span></p>
+            <div id="multiplayerOptions" class="hidden">
+                <button id="joinNewRoom">Join New Room</button>
+            </div>
+            <button id="restartBtn">Restart Game</button>
+        </div>
+    </div>
+
+    <!-- Game Scripts -->
+    <script src="js/utils.js"></script>
+    <script src="js/entities.js"></script>
+    <script src="js/multiplayer.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html> 

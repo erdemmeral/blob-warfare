@@ -1,0 +1,19 @@
+{
+  "name": "blob-warfare",
+  "version": "1.0.0",
+  "description": "A multiplayer browser-based game inspired by agar.io with tower defense elements",
+  "main": "index.html",
+  "scripts": {
+    "start": "serve",
+    "dev": "netlify dev"
+  },
+  "dependencies": {
+    "uuid": "^8.3.2"
+  },
+  "devDependencies": {
+    "netlify-cli": "^12.0.0",
+    "serve": "^14.0.0"
+  },
+  "author": "",
+  "license": "MIT"
+} 

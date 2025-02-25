@@ -1,0 +1,6 @@
+[build]
+  publish = "."
+  command = "# no build command needed for now"
+
+[functions]
+  directory = "functions" 
