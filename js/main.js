@@ -59,6 +59,11 @@ window.addEventListener('DOMContentLoaded', () => {
         
         // Hide menu and start game
         gameMenu.style.display = 'none';
+        
+        // Make sure UI elements are visible
+        document.getElementById('ui').style.display = 'block';
+        document.getElementById('towers').style.display = 'flex';
+        
         initGame();
     });
     

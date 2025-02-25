@@ -133,7 +133,7 @@ class MultiplayerManager {
                 x: tower.x,
                 y: tower.y
             })),
-            isAlive: !this.game.gameOver
+            isAlive: !this.game.gameOver && this.game.player.radius >= 10
         };
         
         await this.sendRequest('updatePlayerState', {
@@ -206,6 +206,16 @@ class MultiplayerManager {
         entity.y = state.y;
         entity.radius = state.radius;
         entity.score = state.score;
+        
+        // Check if player is alive
+        if (state.isAlive === false) {
+            console.log(`Remote player ${remotePlayer.nickname} is dead`);
+            // If the player is dead, make them very small
+            entity.radius = 5;
+        }
+        
+        // Log update for debugging
+        console.log(`Updated remote player ${remotePlayer.nickname}: x=${entity.x.toFixed(1)}, y=${entity.y.toFixed(1)}, radius=${entity.radius.toFixed(1)}, alive=${state.isAlive}`);
         
         // Update towers if provided
         if (state.towers) {
@@ -292,6 +302,7 @@ class RemotePlayer extends Player {
         super(x, y);
         this.nickname = nickname;
         this.isRemote = true;
+        this.color = '#' + Math.floor(Math.random()*16777215).toString(16); // Random color
     }
     
     // Override update to do nothing - position will be set from server updates
@@ -300,8 +311,14 @@ class RemotePlayer extends Player {
     }
     
     draw(ctx) {
-        // Draw player
-        super.draw(ctx);
+        // Draw player with a border to make it more visible
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 2;
+        ctx.stroke();
         
         // Draw player name
         ctx.fillStyle = '#FFF';
@@ -309,5 +326,8 @@ class RemotePlayer extends Player {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
         ctx.fillText(this.nickname, this.x, this.y - this.radius - 5);
+        
+        // Draw towers
+        this.towers.forEach(tower => tower.draw(ctx));
     }
 } 

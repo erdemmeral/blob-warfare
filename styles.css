@@ -32,6 +32,7 @@ body {
     left: 0;
     width: 100%;
     pointer-events: none;
+    z-index: 100;
 }
 
 #score {
@@ -46,10 +47,10 @@ body {
 
 #towers {
     position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
+    top: 10px;
+    left: 10px;
     display: flex;
+    flex-direction: column;
     gap: 10px;
     pointer-events: auto;
 }

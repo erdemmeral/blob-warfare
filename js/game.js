@@ -31,6 +31,7 @@ class Game {
         this.multiplayerEnabled = false;
         this.multiplayer = null;
         this.isMobile = window.isMobile || false;
+        this.debugMode = false;
         
         // Initialize game
         this.init();
@@ -122,6 +123,13 @@ class Game {
         
         // Restart game
         document.getElementById('restartBtn').addEventListener('click', () => this.restart());
+        
+        // Add debug key
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'd') {
+                this.logGameState();
+            }
+        });
     }
 
     async initMultiplayer() {
@@ -258,6 +266,22 @@ class Game {
     update(currentTime) {
         if (this.gameOver) return;
         
+        // Debug collision detection
+        if (this.debugMode) {
+            // Log remote player positions for debugging
+            this.remotePlayers.forEach(remotePlayer => {
+                console.log(`Remote player ${remotePlayer.nickname}: x=${remotePlayer.x.toFixed(1)}, y=${remotePlayer.y.toFixed(1)}, radius=${remotePlayer.radius.toFixed(1)}`);
+                
+                // Check if collision should be happening
+                const dist = distance(this.player.x, this.player.y, remotePlayer.x, remotePlayer.y);
+                const collisionShouldHappen = dist < (this.player.radius + remotePlayer.radius);
+                
+                if (collisionShouldHappen) {
+                    console.log(`Collision should happen with ${remotePlayer.nickname}, distance: ${dist.toFixed(1)}, sum of radii: ${(this.player.radius + remotePlayer.radius).toFixed(1)}`);
+                }
+            });
+        }
+        
         // Spawn entities
         this.spawnEnemy(currentTime);
         this.spawnFood(currentTime);
@@ -313,16 +337,23 @@ class Game {
                 this.player.x, this.player.y, this.player.radius,
                 bot.x, bot.y, bot.radius
             )) {
+                // Log collision for debugging
+                if (this.debugMode) {
+                    console.log(`Collision between player (${this.player.radius.toFixed(1)}) and bot ${bot.name} (${bot.radius.toFixed(1)})`);
+                }
+                
                 if (this.player.radius > bot.radius * 1.2) {
                     // Player eats bot
+                    console.log(`Player eats bot ${bot.name}`);
                     this.player.score += Math.floor(bot.score);
                     this.player.radius += bot.radius * 0.2;
                     this.player.updateSpeed();
                     this.updateScore();
                     bot.markedForDeletion = true;
-                } else if (bot.radius > this.player.radius * 1.2) {
-                    // Bot eats player
-                    this.endGame();
+                } else if (bot.radius > this.player.radius * 1.2 && !this.gameOver) {
+                    // Bot eats player - only if player is significantly smaller
+                    console.log(`Game over: Player (radius ${this.player.radius.toFixed(1)}) eaten by bot ${bot.name} (radius ${bot.radius.toFixed(1)})`);
+                    this.endGame("Eaten by " + bot.name);
                 }
             }
             
@@ -376,6 +407,9 @@ class Game {
         
         // Update remote players (minimal updates as they're controlled by the server)
         this.remotePlayers.forEach(remotePlayer => {
+            // Skip if remote player is too small (dead)
+            if (remotePlayer.radius < 10) return;
+            
             // Check remote player collision with food
             this.food.forEach(food => {
                 if (circleCollision(
@@ -392,15 +426,30 @@ class Game {
                 this.player.x, this.player.y, this.player.radius,
                 remotePlayer.x, remotePlayer.y, remotePlayer.radius
             )) {
+                // Log collision for debugging
+                if (this.debugMode) {
+                    console.log(`Collision between player (${this.player.radius.toFixed(1)}) and ${remotePlayer.nickname} (${remotePlayer.radius.toFixed(1)})`);
+                }
+                
                 if (this.player.radius > remotePlayer.radius * 1.2) {
                     // Player eats remote player
+                    console.log(`Player eats remote player ${remotePlayer.nickname}`);
                     this.player.score += Math.floor(remotePlayer.score || 0);
                     this.player.radius += remotePlayer.radius * 0.2;
                     this.player.updateSpeed();
                     this.updateScore();
-                } else if (remotePlayer.radius > this.player.radius * 1.2) {
-                    // Remote player eats player
-                    this.endGame();
+                    
+                    // Make remote player very small to indicate they've been eaten
+                    remotePlayer.radius = 5;
+                    
+                    // Notify multiplayer system that we ate this player
+                    if (this.multiplayer) {
+                        this.multiplayer.sendPlayerState();
+                    }
+                } else if (remotePlayer.radius > this.player.radius * 1.2 && !this.gameOver) {
+                    // Remote player eats player - only if player is significantly smaller
+                    console.log(`Game over: Player (radius ${this.player.radius.toFixed(1)}) eaten by remote player ${remotePlayer.nickname} (radius ${remotePlayer.radius.toFixed(1)})`);
+                    this.endGame("Eaten by " + remotePlayer.nickname);
                 }
             }
             
@@ -451,9 +500,10 @@ class Game {
                     this.player.updateSpeed();
                     this.updateScore();
                     enemy.markedForDeletion = true;
-                } else {
+                } else if (!this.gameOver) {
                     // If enemy is bigger or similar size, game over
-                    this.endGame();
+                    console.log(`Game over: Player (radius ${this.player.radius.toFixed(1)}) eaten by enemy (radius ${enemy.radius.toFixed(1)})`);
+                    this.endGame("Eaten by enemy blob");
                 }
             }
         });
@@ -499,8 +549,9 @@ class Game {
                         
                         // If player gets too small, they die
                         if (player.radius < 10) {
-                            if (player === this.player) {
-                                this.endGame();
+                            if (player === this.player && !this.gameOver) {
+                                console.log(`Game over: Player (radius ${this.player.radius.toFixed(1)}) killed by projectile from ${projectile.owner ? (projectile.owner.nickname || 'bot') : 'unknown'}`);
+                                this.endGame("Killed by projectile");
                             } else if (player.isRemote) {
                                 // Remote players are handled by their own clients
                             } else {
@@ -684,6 +735,24 @@ class Game {
             this.ctx.fillText(`Room: ${this.multiplayer.roomId || 'Connecting...'}`, 10, 10);
             this.ctx.fillText(`Players: ${1 + Object.keys(this.multiplayer.otherPlayers).length}`, 10, 30);
         }
+        
+        // Draw debug info if enabled
+        if (this.debugMode) {
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            this.ctx.fillRect(10, 50, 250, 150);
+            this.ctx.fillStyle = '#FFF';
+            this.ctx.font = '12px monospace';
+            this.ctx.textAlign = 'left';
+            this.ctx.textBaseline = 'top';
+            this.ctx.fillText(`Player Radius: ${this.player.radius.toFixed(1)}`, 20, 60);
+            this.ctx.fillText(`Player Score: ${this.player.score}`, 20, 80);
+            this.ctx.fillText(`Game Over: ${this.gameOver}`, 20, 100);
+            this.ctx.fillText(`Bots: ${this.bots.length}`, 20, 120);
+            this.ctx.fillText(`Remote Players: ${this.remotePlayers.length}`, 20, 140);
+            this.ctx.fillText(`Enemies: ${this.enemies.length}`, 20, 160);
+            this.ctx.fillText(`FPS: ${(1000 / (Date.now() - this._lastFrameTime)).toFixed(1)}`, 20, 180);
+            this._lastFrameTime = Date.now();
+        }
     }
 
     updateScore() {
@@ -721,14 +790,20 @@ class Game {
         });
     }
 
-    endGame() {
-        this.gameOver = true;
-        document.getElementById('finalScore').textContent = this.player.score;
-        document.getElementById('gameOver').classList.remove('hidden');
-        
-        // Show multiplayer-specific options if in multiplayer mode
-        if (this.multiplayerEnabled) {
-            document.getElementById('multiplayerOptions').classList.remove('hidden');
+    endGame(reason = "Game Over") {
+        // Only end the game if the player is actually dead or has been eaten
+        if (!this.player || this.player.radius < 10) {
+            console.log(`Game over triggered: ${reason}`);
+            this.gameOver = true;
+            document.getElementById('finalScore').textContent = this.player ? this.player.score : 0;
+            document.getElementById('gameOver').classList.remove('hidden');
+            
+            // Show multiplayer-specific options if in multiplayer mode
+            if (this.multiplayerEnabled) {
+                document.getElementById('multiplayerOptions').classList.remove('hidden');
+            }
+        } else {
+            console.warn(`Attempted to end game but player is still alive. Reason: ${reason}, Player radius: ${this.player.radius.toFixed(1)}`);
         }
     }
 
@@ -814,5 +889,32 @@ class Game {
             const bot = new Bot(x, y, botName, botColor, difficulty);
             this.bots.push(bot);
         }
+    }
+
+    // Debug method to log game state
+    logGameState() {
+        console.group("Game State Debug");
+        console.log("Game Over:", this.gameOver);
+        console.log("Player:", {
+            x: this.player ? this.player.x.toFixed(1) : "N/A",
+            y: this.player ? this.player.y.toFixed(1) : "N/A",
+            radius: this.player ? this.player.radius.toFixed(1) : "N/A",
+            score: this.player ? this.player.score : "N/A"
+        });
+        console.log("Bots:", this.bots.length);
+        console.log("Remote Players:", this.remotePlayers.length);
+        console.log("Enemies:", this.enemies.length);
+        console.log("Food:", this.food.length);
+        console.log("Projectiles:", this.projectiles.length);
+        console.log("Multiplayer Enabled:", this.multiplayerEnabled);
+        if (this.multiplayer) {
+            console.log("Multiplayer Connected:", this.multiplayer.isConnected);
+            console.log("Room ID:", this.multiplayer.roomId);
+            console.log("Other Players:", Object.keys(this.multiplayer.otherPlayers).length);
+        }
+        console.groupEnd();
+        
+        // Toggle debug mode
+        this.debugMode = !this.debugMode;
     }
 } 
