@@ -300,6 +300,24 @@ class Game {
             });
         }
         
+        // ALWAYS check for collisions, not just in debug mode
+        this.remotePlayers.forEach(remotePlayer => {
+            // Skip if remote player is too small (dead)
+            if (remotePlayer.radius < 10) return;
+            
+            const dist = distance(this.player.x, this.player.y, remotePlayer.x, remotePlayer.y);
+            if (dist < (this.player.radius + remotePlayer.radius)) {
+                this.handlePlayerRemotePlayerCollision(this.player, remotePlayer);
+            }
+        });
+        
+        this.bots.forEach(bot => {
+            const dist = distance(this.player.x, this.player.y, bot.x, bot.y);
+            if (dist < (this.player.radius + bot.radius)) {
+                this.handlePlayerBotCollision(this.player, bot);
+            }
+        });
+        
         // Spawn entities
         this.spawnEnemy(currentTime);
         this.spawnFood(currentTime);
@@ -515,16 +533,14 @@ class Game {
                         player.x, player.y, player.radius
                     )) {
                         // Damage player - increased effect
-                        const damageAmount = projectile.damage * 0.1; // Increased from 0.05
+                        const damageAmount = projectile.damage * 0.2; // Increased from 0.1 to 0.2
                         player.radius -= damageAmount;
                         
                         // Create hit effect
                         this.createHitEffect(player.x, player.y);
                         
                         // Log damage for debugging
-                        if (this.debugMode) {
-                            console.log(`Player ${player === this.player ? 'user' : (player.nickname || player.name || 'bot')} hit by projectile for ${damageAmount.toFixed(1)} damage. New radius: ${player.radius.toFixed(1)}`);
-                        }
+                        console.log(`Player ${player === this.player ? 'user' : (player.nickname || player.name || 'bot')} hit by projectile for ${damageAmount.toFixed(1)} damage. New radius: ${player.radius.toFixed(1)}`);
                         
                         // If player gets too small, they die
                         if (player.radius < 10) {
@@ -685,6 +701,18 @@ class Game {
         
         // Draw projectiles
         this.projectiles.forEach(projectile => projectile.draw(this.ctx));
+        
+        // Draw hit effects
+        if (this.hitEffects && this.hitEffects.length > 0) {
+            // Update and draw hit effects
+            this.hitEffects = this.hitEffects.filter(effect => {
+                const isActive = effect.update();
+                if (isActive) {
+                    effect.draw(this.ctx);
+                }
+                return isActive;
+            });
+        }
         
         // Draw bots
         this.bots.forEach(bot => bot.draw(this.ctx));
@@ -908,16 +936,23 @@ class Game {
                 console.log(`Collision between player (${player.radius.toFixed(1)}) and bot ${bot.name} (${bot.radius.toFixed(1)})`);
             }
             
-            if (player.radius > bot.radius * 1.2) {
-                // Player eats bot
+            // Always log collisions to help diagnose issues
+            console.log(`Collision: Player (${player.radius.toFixed(1)}) and bot ${bot.name} (${bot.radius.toFixed(1)})`);
+            
+            // Calculate exact distance for more precise collision detection
+            const dist = distance(player.x, player.y, bot.x, bot.y);
+            console.log(`Distance: ${dist.toFixed(1)}, Sum of radii: ${(player.radius + bot.radius).toFixed(1)}`);
+            
+            if (player.radius > bot.radius * 1.1) {
+                // Player eats bot - reduced size advantage requirement from 1.2 to 1.1
                 console.log(`Player eats bot ${bot.name}`);
                 player.score += Math.floor(bot.score);
                 player.radius += bot.radius * 0.2;
                 player.updateSpeed();
                 this.updateScore();
                 bot.markedForDeletion = true;
-            } else if (bot.radius > player.radius * 1.2 && !this.gameOver) {
-                // Bot eats player - only if player is significantly smaller
+            } else if (bot.radius > player.radius * 1.1 && !this.gameOver) {
+                // Bot eats player - reduced size advantage requirement from 1.2 to 1.1
                 console.log(`Game over: Player (radius ${player.radius.toFixed(1)}) eaten by bot ${bot.name} (radius ${bot.radius.toFixed(1)})`);
                 this.endGame("Eaten by " + bot.name);
             }
@@ -935,8 +970,15 @@ class Game {
                 console.log(`Collision between player (${player.radius.toFixed(1)}) and ${remotePlayer.nickname} (${remotePlayer.radius.toFixed(1)})`);
             }
             
-            if (player.radius > remotePlayer.radius * 1.2) {
-                // Player eats remote player
+            // Always log collisions to help diagnose issues
+            console.log(`Collision: Player (${player.radius.toFixed(1)}) and ${remotePlayer.nickname} (${remotePlayer.radius.toFixed(1)})`);
+            
+            // Calculate exact distance for more precise collision detection
+            const dist = distance(player.x, player.y, remotePlayer.x, remotePlayer.y);
+            console.log(`Distance: ${dist.toFixed(1)}, Sum of radii: ${(player.radius + remotePlayer.radius).toFixed(1)}`);
+            
+            if (player.radius > remotePlayer.radius * 1.1) {
+                // Player eats remote player - reduced size advantage requirement from 1.2 to 1.1
                 console.log(`Player eats remote player ${remotePlayer.nickname}`);
                 player.score += Math.floor(remotePlayer.score || 0);
                 player.radius += remotePlayer.radius * 0.2;
@@ -950,8 +992,8 @@ class Game {
                 if (this.multiplayer) {
                     this.multiplayer.sendPlayerState();
                 }
-            } else if (remotePlayer.radius > player.radius * 1.2 && !this.gameOver) {
-                // Remote player eats player - only if player is significantly smaller
+            } else if (remotePlayer.radius > player.radius * 1.1 && !this.gameOver) {
+                // Remote player eats player - reduced size advantage requirement from 1.2 to 1.1
                 console.log(`Game over: Player (radius ${player.radius.toFixed(1)}) eaten by remote player ${remotePlayer.nickname} (radius ${remotePlayer.radius.toFixed(1)})`);
                 this.endGame("Eaten by " + remotePlayer.nickname);
             }
@@ -960,8 +1002,39 @@ class Game {
 
     // Create a visual hit effect
     createHitEffect(x, y) {
-        // We'll implement this in a future update if needed
-        // For now, we'll just log it
+        // Create a visual hit effect that will be drawn on the canvas
+        const hitEffect = {
+            x: x,
+            y: y,
+            radius: 10,
+            alpha: 1.0,
+            color: '#FFFF00',
+            update: function() {
+                this.radius += 1;
+                this.alpha -= 0.05;
+                return this.alpha > 0;
+            },
+            draw: (ctx) => {
+                ctx.globalAlpha = hitEffect.alpha;
+                ctx.beginPath();
+                ctx.arc(hitEffect.x, hitEffect.y, hitEffect.radius, 0, Math.PI * 2);
+                ctx.fillStyle = hitEffect.color;
+                ctx.fill();
+                ctx.strokeStyle = '#FF0000';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.globalAlpha = 1.0;
+            }
+        };
+        
+        // Add to a list of effects if we don't have one yet
+        if (!this.hitEffects) {
+            this.hitEffects = [];
+        }
+        
+        this.hitEffects.push(hitEffect);
+        
+        // Log hit effect for debugging
         if (this.debugMode) {
             console.log(`Hit effect at ${x.toFixed(1)}, ${y.toFixed(1)}`);
         }

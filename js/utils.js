@@ -20,7 +20,11 @@ function randomColor() {
 
 // Check if two circles are colliding
 function circleCollision(x1, y1, r1, x2, y2, r2) {
-    return distance(x1, y1, x2, y2) < r1 + r2;
+    // Calculate the distance between centers
+    const dist = distance(x1, y1, x2, y2);
+    // Return true if the distance is less than the sum of radii
+    // Add a small buffer (0.1) to ensure collision detection is reliable
+    return dist < (r1 + r2 - 0.1);
 }
 
 // Clamp a value between min and max
