@@ -272,12 +272,13 @@ class HeavyTower extends Tower {
 // Projectile class
 class Projectile extends Entity {
     constructor(x, y, angle, damage) {
-        super(x, y, 3, '#FFF');
-        this.speed = 5;
+        super(x, y, 4, '#FFFF00'); // Increased size and changed to yellow for better visibility
+        this.speed = 6; // Increased speed
         this.angle = angle;
-        this.damage = damage;
+        this.damage = damage * 1.5; // Increased damage
         this.distance = 0;
-        this.maxDistance = 300;
+        this.maxDistance = 350; // Increased range
+        this.owner = null; // Will be set when fired
     }
 
     update() {
@@ -293,6 +294,34 @@ class Projectile extends Entity {
         if (this.distance > this.maxDistance) {
             this.markedForDeletion = true;
         }
+    }
+    
+    draw(ctx) {
+        // Draw a more visible projectile with a trail
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        
+        // Add a glow effect
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius * 1.5, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 255, 0, 0.3)';
+        ctx.fill();
+        
+        // Draw a small trail
+        const trailLength = 3;
+        const velocity = angleToVector(this.angle);
+        
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+        ctx.lineTo(
+            this.x - velocity.x * this.radius * trailLength,
+            this.y - velocity.y * this.radius * trailLength
+        );
+        ctx.strokeStyle = 'rgba(255, 255, 0, 0.5)';
+        ctx.lineWidth = this.radius;
+        ctx.stroke();
     }
 }
 
