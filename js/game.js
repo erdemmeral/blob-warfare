@@ -73,14 +73,37 @@ class Game {
         }, { passive: false });
         
         // Tower placement
-        document.getElementById('basicTower').addEventListener('click', () => this.placeTower('basic'));
-        document.getElementById('fastTower').addEventListener('click', () => this.placeTower('fast'));
-        document.getElementById('heavyTower').addEventListener('click', () => this.placeTower('heavy'));
+        const basicTowerBtn = document.getElementById('basicTower');
+        const fastTowerBtn = document.getElementById('fastTower');
+        const heavyTowerBtn = document.getElementById('heavyTower');
+        
+        // Add both click and touch events for tower buttons
+        basicTowerBtn.addEventListener('click', () => this.placeTower('basic'));
+        fastTowerBtn.addEventListener('click', () => this.placeTower('fast'));
+        heavyTowerBtn.addEventListener('click', () => this.placeTower('heavy'));
+        
+        // Add touch events specifically for mobile
+        if (this.isMobile) {
+            basicTowerBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                this.placeTower('basic');
+            });
+            
+            fastTowerBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                this.placeTower('fast');
+            });
+            
+            heavyTowerBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                this.placeTower('heavy');
+            });
+        }
         
         // Update button text to show shortcuts
-        document.getElementById('basicTower').innerHTML = 'Basic Tower (10)<br><small>Key: 1</small>';
-        document.getElementById('fastTower').innerHTML = 'Fast Tower (25)<br><small>Key: 2</small>';
-        document.getElementById('heavyTower').innerHTML = 'Heavy Tower (50)<br><small>Key: 3</small>';
+        basicTowerBtn.innerHTML = 'Basic Tower (10)<br><small>Key: 1</small>';
+        fastTowerBtn.innerHTML = 'Fast Tower (25)<br><small>Key: 2</small>';
+        heavyTowerBtn.innerHTML = 'Heavy Tower (50)<br><small>Key: 3</small>';
         
         // Keyboard shortcuts for towers
         window.addEventListener('keydown', (e) => {
@@ -158,7 +181,15 @@ class Game {
             const nextCost = Math.floor(baseCost * (1 + 0.5 * nextLevel));
             const buttonId = type + 'Tower';
             const keyNumber = type === 'basic' ? '1' : (type === 'fast' ? '2' : '3');
-            const buttonText = type.charAt(0).toUpperCase() + type.slice(1) + ' Tower (' + nextCost + ')<br><small>Key: ' + keyNumber + '</small>';
+            
+            // Format button text differently for mobile
+            let buttonText;
+            if (this.isMobile) {
+                buttonText = type.charAt(0).toUpperCase() + type.slice(1) + '<br>(' + nextCost + ')<br><small>Key: ' + keyNumber + '</small>';
+            } else {
+                buttonText = type.charAt(0).toUpperCase() + type.slice(1) + ' Tower (' + nextCost + ')<br><small>Key: ' + keyNumber + '</small>';
+            }
+            
             document.getElementById(buttonId).innerHTML = buttonText;
         }
     }
@@ -673,10 +704,18 @@ class Game {
             
             // Update button state
             button.disabled = this.player.score < cost;
+            button.style.opacity = this.player.score < cost ? '0.5' : '1';
             
             // Update button text if tower exists
             if (currentLevel > 0) {
-                const buttonText = type.charAt(0).toUpperCase() + type.slice(1) + ' Tower (' + cost + ')<br><small>Key: ' + keyNumbers[index] + '</small>';
+                // Format button text differently for mobile
+                let buttonText;
+                if (this.isMobile) {
+                    buttonText = type.charAt(0).toUpperCase() + type.slice(1) + '<br>(' + cost + ')<br><small>Key: ' + keyNumbers[index] + '</small>';
+                } else {
+                    buttonText = type.charAt(0).toUpperCase() + type.slice(1) + ' Tower (' + cost + ')<br><small>Key: ' + keyNumbers[index] + '</small>';
+                }
+                
                 button.innerHTML = buttonText;
             }
         });

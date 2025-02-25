@@ -2,6 +2,10 @@
  * Main entry point for the game
  */
 
+// Global game instance to track and clean up
+let currentGame = null;
+let gameLoopId = null;
+
 // Wait for DOM to load
 window.addEventListener('DOMContentLoaded', () => {
     // Detect if user is on mobile
@@ -60,15 +64,17 @@ window.addEventListener('DOMContentLoaded', () => {
     
     // Initialize game after menu selection
     function initGame() {
+        // Clean up any existing game instance
+        cleanupGame();
+        
         // Get canvas element
         const canvas = document.getElementById('gameCanvas');
         
         // Create game instance
-        const game = new Game(canvas);
+        currentGame = new Game(canvas);
         
         // Game loop variables
         let lastTime = 0;
-        let animationFrameId;
         
         // Game loop function
         function gameLoop(timestamp) {
@@ -77,20 +83,20 @@ window.addEventListener('DOMContentLoaded', () => {
             lastTime = timestamp;
             
             // Update game state
-            game.update(timestamp);
+            currentGame.update(timestamp);
             
             // Draw game
-            game.draw();
+            currentGame.draw();
             
             // Request next frame
-            animationFrameId = requestAnimationFrame(gameLoop);
+            gameLoopId = requestAnimationFrame(gameLoop);
         }
         
         // Start game loop
-        animationFrameId = requestAnimationFrame(gameLoop);
+        gameLoopId = requestAnimationFrame(gameLoop);
         
         // Add some instructions to the console
-        console.log('Welcome to Blob Warfare, ' + nickname + '!');
+        console.log('Welcome to Blob Warfare, ' + window.playerName + '!');
         console.log('Move your blob with the mouse' + (isMobile ? ' or touch' : '') + '.');
         console.log('Collect food (small dots) to grow and earn points.');
         console.log('Use points to buy towers that will automatically shoot at enemies.');
@@ -99,27 +105,32 @@ window.addEventListener('DOMContentLoaded', () => {
         // Add event listener for restart button
         document.getElementById('restartBtn').addEventListener('click', () => {
             // Reset game
-            if (game.multiplayer) {
-                game.multiplayer.disconnect();
+            if (currentGame.multiplayer) {
+                currentGame.multiplayer.disconnect();
             }
             
             // Show menu again
             gameMenu.style.display = 'flex';
+            
+            // Clean up the current game
+            cleanupGame();
         });
         
         // Add event listener for join new room button
         document.getElementById('joinNewRoom').addEventListener('click', () => {
-            if (game.multiplayer) {
-                game.multiplayer.disconnect();
+            if (currentGame.multiplayer) {
+                currentGame.multiplayer.disconnect();
             }
             
-            // Restart game with same settings
-            game.restart();
-            document.getElementById('gameOver').classList.add('hidden');
+            // Clean up the current game first
+            cleanupGame();
+            
+            // Start a new game
+            initGame();
             
             // Try to join a new room
-            if (game.multiplayerEnabled) {
-                game.initMultiplayer();
+            if (currentGame.multiplayerEnabled) {
+                currentGame.initMultiplayer();
             }
         });
         
@@ -133,5 +144,30 @@ window.addEventListener('DOMContentLoaded', () => {
                 e.preventDefault();
             }, { passive: false });
         }
+    }
+    
+    // Function to clean up the current game instance
+    function cleanupGame() {
+        if (gameLoopId) {
+            cancelAnimationFrame(gameLoopId);
+            gameLoopId = null;
+        }
+        
+        if (currentGame) {
+            // Disconnect from multiplayer if connected
+            if (currentGame.multiplayer && currentGame.multiplayer.isConnected) {
+                currentGame.multiplayer.disconnect();
+            }
+            
+            // Clear game references
+            currentGame = null;
+        }
+        
+        // Hide game over screen
+        document.getElementById('gameOver').classList.add('hidden');
+        document.getElementById('multiplayerOptions').classList.add('hidden');
+        
+        // Reset score display
+        document.getElementById('scoreValue').textContent = '0';
     }
 }); 

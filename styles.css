@@ -71,6 +71,11 @@ body {
     border-color: #666;
 }
 
+#towers button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 #towers button small {
     font-size: 12px;
     opacity: 0.8;
@@ -281,12 +286,31 @@ body {
     }
     
     #towers {
-        bottom: 10px;
+        bottom: 20px;
+        width: 100%;
+        justify-content: center;
+        gap: 5px;
+        background-color: rgba(0, 0, 0, 0.5);
+        padding: 10px 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.2);
     }
     
     #towers button {
-        padding: 15px 20px; /* Larger touch targets */
+        padding: 15px 10px;
         font-size: 14px;
+        width: 30%;
+        height: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border-width: 3px;
+        background-color: rgba(0, 0, 0, 0.8);
+    }
+    
+    #towers button small {
+        margin-top: 5px;
+        font-size: 12px;
     }
     
     #gameOver h2 {
