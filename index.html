@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>Blob Warfare</title>
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -10,11 +12,35 @@
     <div id="gameContainer">
         <canvas id="gameCanvas"></canvas>
         <div id="ui">
-            <div id="score">Score: 0</div>
+            <div id="score">Score: <span id="scoreValue">0</span></div>
             <div id="towers">
                 <button id="basicTower">Basic Tower (10)<br><small>Key: 1</small></button>
                 <button id="fastTower">Fast Tower (25)<br><small>Key: 2</small></button>
                 <button id="heavyTower">Heavy Tower (50)<br><small>Key: 3</small></button>
+            </div>
+        </div>
+        <div id="gameMenu">
+            <div class="menu-container">
+                <h1>Blob Warfare</h1>
+                <div class="menu-form">
+                    <div class="form-group">
+                        <label for="nickname">Nickname:</label>
+                        <input type="text" id="nickname" placeholder="Enter your nickname" maxlength="15">
+                    </div>
+                    <div class="form-group game-mode">
+                        <label>Game Mode:</label>
+                        <div class="mode-buttons">
+                            <button id="singlePlayerBtn" class="mode-btn active">Single Player</button>
+                            <button id="multiPlayerBtn" class="mode-btn">Multiplayer</button>
+                        </div>
+                    </div>
+                    <button id="startGameBtn" class="start-btn">Start Game</button>
+                </div>
+                <div class="game-info">
+                    <p>Control your blob with mouse or touch. Collect food to grow.</p>
+                    <p>Use points to buy towers that shoot at enemies.</p>
+                    <p>Avoid larger blobs or you'll be eaten!</p>
+                </div>
             </div>
         </div>
         <div id="gameOver" class="hidden">

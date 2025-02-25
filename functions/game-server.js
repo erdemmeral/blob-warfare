@@ -92,7 +92,7 @@ exports.handler = async (event, context) => {
 
     case 'joinRoom':
       // Join an existing room or create a new one
-      const { playerId: playerToJoin } = data;
+      const { playerId: playerToJoin, preferExisting } = data;
       
       if (!gameState.players[playerToJoin]) {
         return {
@@ -106,15 +106,27 @@ exports.handler = async (event, context) => {
       let roomToJoin = data.roomId;
       
       if (!roomToJoin || !gameState.rooms[roomToJoin]) {
-        // Find a room with space or create a new one
+        // Find a room with players that isn't full
         const availableRooms = Object.values(gameState.rooms).filter(
-          room => room.players.length < 10 && Date.now() - room.created < 3600000 // 1 hour max age
+          room => room.players.length > 0 && room.players.length < 10 && Date.now() - room.created < 3600000 // 1 hour max age
         );
+        
+        // Sort rooms by player count (descending) to fill up rooms before creating new ones
+        availableRooms.sort((a, b) => b.players.length - a.players.length);
         
         if (availableRooms.length > 0) {
           roomToJoin = availableRooms[0].id;
         } else {
-          roomToJoin = createRoom();
+          // If no rooms with players exist, look for any room with space
+          const emptyRooms = Object.values(gameState.rooms).filter(
+            room => room.players.length < 10 && Date.now() - room.created < 3600000 // 1 hour max age
+          );
+          
+          if (emptyRooms.length > 0) {
+            roomToJoin = emptyRooms[0].id;
+          } else {
+            roomToJoin = createRoom();
+          }
         }
       }
       

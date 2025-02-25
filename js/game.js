@@ -21,8 +21,8 @@ class Game {
         this.lastFoodSpawnTime = 0;
         this.foodSpawnRate = 1000; // ms between food spawns
         this.mousePosition = { x: 0, y: 0 };
-        this.worldWidth = 2000;
-        this.worldHeight = 2000;
+        this.worldWidth = window.isMobile ? 1500 : 2000;
+        this.worldHeight = window.isMobile ? 1500 : 2000;
         this.camera = { x: 0, y: 0 };
         this.botCount = window.botCount || 3;
         this.botDifficulty = window.botDifficulty || 'medium';
@@ -30,6 +30,7 @@ class Game {
         this.botColors = ['#FF5722', '#9C27B0', '#3F51B5', '#03A9F4', '#009688', '#8BC34A', '#FFEB3B', '#FF9800', '#795548', '#607D8B'];
         this.multiplayerEnabled = false;
         this.multiplayer = null;
+        this.isMobile = window.isMobile || false;
         
         // Initialize game
         this.init();
@@ -59,6 +60,17 @@ class Game {
             this.mousePosition.x = e.clientX + this.camera.x;
             this.mousePosition.y = e.clientY + this.camera.y;
         });
+        
+        // Add touch support for mobile devices
+        window.addEventListener('touchmove', (e) => {
+            // Prevent default to stop scrolling
+            e.preventDefault();
+            if (e.touches.length > 0) {
+                const touch = e.touches[0];
+                this.mousePosition.x = touch.clientX + this.camera.x;
+                this.mousePosition.y = touch.clientY + this.camera.y;
+            }
+        }, { passive: false });
         
         // Tower placement
         document.getElementById('basicTower').addEventListener('click', () => this.placeTower('basic'));
@@ -99,7 +111,18 @@ class Game {
             this.botDifficulty
         );
         
-        if (!success) {
+        if (success) {
+            // Adjust bot count based on player count in the room
+            if (this.multiplayer.otherPlayers) {
+                const playerCount = 1 + Object.keys(this.multiplayer.otherPlayers).length;
+                // Match bots to player count, with a minimum of 2 bots
+                this.botCount = Math.max(2, playerCount);
+                console.log(`Adjusted bot count to match player count: ${this.botCount}`);
+            }
+            
+            // Create bots for multiplayer mode
+            this.createBots();
+        } else {
             console.error('Failed to initialize multiplayer, falling back to single player');
             this.multiplayerEnabled = false;
             this.createBots();
@@ -683,10 +706,8 @@ class Game {
         this.enemySpawnRate = 3000;
         this.lastFoodSpawnTime = 0;
         
-        // Create new bots in single player mode
-        if (!this.multiplayerEnabled) {
-            this.createBots();
-        }
+        // Create new bots
+        this.createBots();
         
         // Hide game over screen
         document.getElementById('gameOver').classList.add('hidden');

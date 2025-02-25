@@ -4,7 +4,7 @@ A browser-based game inspired by agar.io with tower defense elements. Control yo
 
 ## Features
 
-- **Blob Movement**: Control your blob with mouse movement
+- **Blob Movement**: Control your blob with mouse movement or touch on mobile
 - **Food Collection**: Collect food dots to grow larger and earn points
 - **Enemy Blobs**: Avoid larger enemy blobs or eat smaller ones
 - **Tower Defense**: Place towers that automatically shoot at enemies
@@ -17,20 +17,28 @@ A browser-based game inspired by agar.io with tower defense elements. Control yo
   - Join game rooms with other players
   - Compete or cooperate with real players
   - Towers can target other players if they're smaller than you
+- **Mobile Support**: Play on your smartphone or tablet with touch controls
 
 ## How to Play
 
 1. Enter your nickname when prompted
 2. Choose the number of bots and their difficulty
 3. Decide whether to play in single-player or multiplayer mode
-4. Control your blob with the mouse
+4. Control your blob with the mouse (or touch on mobile)
 5. Collect food (small dots) to grow and earn points
-6. Use points to place towers by clicking the buttons or using number keys:
-   - Basic Tower: Press 1 (10 points)
-   - Fast Tower: Press 2 (25 points)
-   - Heavy Tower: Press 3 (50 points)
+6. Use points to place towers by clicking the buttons or using number keys (on desktop):
+   - Basic Tower: Press 1 or tap button (10 points)
+   - Fast Tower: Press 2 or tap button (25 points)
+   - Heavy Tower: Press 3 or tap button (50 points)
 7. Avoid larger enemy blobs and other players
 8. Try to become the largest blob in the game!
+
+## Mobile Play
+
+The game is fully playable on mobile devices:
+- Use touch to move your blob
+- Tap the tower buttons at the bottom of the screen to place towers
+- The game automatically adjusts difficulty and world size for better mobile experience
 
 ## Multiplayer Setup
 

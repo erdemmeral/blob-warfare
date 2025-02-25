@@ -47,9 +47,11 @@ class MultiplayerManager {
 
     async joinRoom(roomId = null) {
         try {
+            // Always try to join an existing room with players first
             const response = await this.sendRequest('joinRoom', {
                 playerId: this.playerId,
-                roomId
+                roomId: roomId,
+                preferExisting: true  // Signal to server that we prefer existing rooms
             });
 
             if (response && response.roomId) {
