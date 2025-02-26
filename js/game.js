@@ -477,18 +477,23 @@ class Game {
                 this.player.x, this.player.y, this.player.radius,
                 enemy.x, enemy.y, enemy.radius
             )) {
-                // If player is bigger, eat the enemy
-                if (this.player.radius > enemy.radius * 1.05) {
+                console.log(`COLLISION DETECTED between player (${this.player.radius.toFixed(1)}) and enemy (${enemy.radius.toFixed(1)})`);
+                
+                // If player is bigger, eat the enemy (reduced size advantage requirement)
+                if (this.player.radius > enemy.radius * 1.02) {
+                    console.log(`Player eats enemy (player: ${this.player.radius.toFixed(1)}, enemy: ${enemy.radius.toFixed(1)})`);
                     this.player.score += enemy.value;
                     this.player.radius += enemy.radius * 0.2;
                     // Adjust player speed based on size
                     this.player.updateSpeed();
                     this.updateScore();
                     enemy.markedForDeletion = true;
-                } else if (enemy.radius > this.player.radius * 1.05 && !this.gameOver) {
-                    // If enemy is bigger or similar size, game over
-                    console.log(`Game over: Player (radius ${this.player.radius.toFixed(1)}) eaten by enemy (radius ${enemy.radius.toFixed(1)})`);
+                } else if (enemy.radius > this.player.radius * 1.02 && !this.gameOver) {
+                    // If enemy is bigger, game over (reduced size advantage requirement)
+                    console.log(`Enemy eats player (enemy: ${enemy.radius.toFixed(1)}, player: ${this.player.radius.toFixed(1)})`);
                     this.endGame("Eaten by enemy blob");
+                } else {
+                    console.log(`Size difference too small to eat: ${(this.player.radius / enemy.radius).toFixed(2)}x`);
                 }
             }
         });
@@ -954,29 +959,29 @@ class Game {
         const dist = distance(player.x, player.y, bot.x, bot.y);
         const collisionThreshold = player.radius + bot.radius;
         
-        if (dist < collisionThreshold * 0.9) { // Added buffer for more reliable collisions
-            // Log collision for debugging
-            if (this.debugMode) {
-                console.log(`Collision between player (${player.radius.toFixed(1)}) and bot ${bot.name} (${bot.radius.toFixed(1)})`);
-            }
+        // Always log collisions to help diagnose issues
+        console.log(`Checking collision: Player (${player.radius.toFixed(1)}) and bot ${bot.name} (${bot.radius.toFixed(1)})`);
+        console.log(`Distance: ${dist.toFixed(1)}, Threshold: ${collisionThreshold.toFixed(1)}`);
+        
+        // Use a more aggressive collision detection (0.95 instead of 0.9)
+        if (dist < collisionThreshold * 0.95) {
+            console.log(`COLLISION DETECTED between player and bot ${bot.name}!`);
             
-            // Always log collisions to help diagnose issues
-            console.log(`Collision: Player (${player.radius.toFixed(1)}) and bot ${bot.name} (${bot.radius.toFixed(1)})`);
-            console.log(`Distance: ${dist.toFixed(1)}, Sum of radii: ${collisionThreshold.toFixed(1)}`);
-            
-            // Reduce the size advantage needed to eat
-            if (player.radius > bot.radius * 1.05) {
-                // Player eats bot - reduced size advantage requirement to just 5%
-                console.log(`Player eats bot ${bot.name}`);
+            // Check size difference more aggressively (1.02 instead of 1.05)
+            if (player.radius > bot.radius * 1.02) {
+                // Player eats bot
+                console.log(`Player (${player.radius.toFixed(1)}) eats bot ${bot.name} (${bot.radius.toFixed(1)})`);
                 player.score += Math.floor(bot.score);
                 player.radius += bot.radius * 0.2;
                 player.updateSpeed();
                 this.updateScore();
                 bot.markedForDeletion = true;
-            } else if (bot.radius > player.radius * 1.05 && !this.gameOver) {
-                // Bot eats player - reduced size advantage requirement to just 5%
-                console.log(`Game over: Player (radius ${player.radius.toFixed(1)}) eaten by bot ${bot.name} (radius ${bot.radius.toFixed(1)})`);
+            } else if (bot.radius > player.radius * 1.02 && !this.gameOver) {
+                // Bot eats player
+                console.log(`Bot ${bot.name} (${bot.radius.toFixed(1)}) eats player (${player.radius.toFixed(1)})`);
                 this.endGame("Eaten by " + bot.name);
+            } else {
+                console.log(`Size difference too small to eat: ${(player.radius / bot.radius).toFixed(2)}x`);
             }
         }
     }
@@ -987,20 +992,18 @@ class Game {
         const dist = distance(player.x, player.y, remotePlayer.x, remotePlayer.y);
         const collisionThreshold = player.radius + remotePlayer.radius;
         
-        if (dist < collisionThreshold * 0.9) { // Added buffer for more reliable collisions
-            // Log collision for debugging
-            if (this.debugMode) {
-                console.log(`Collision between player (${player.radius.toFixed(1)}) and ${remotePlayer.nickname} (${remotePlayer.radius.toFixed(1)})`);
-            }
+        // Always log collisions to help diagnose issues
+        console.log(`Checking collision: Player (${player.radius.toFixed(1)}) and ${remotePlayer.nickname} (${remotePlayer.radius.toFixed(1)})`);
+        console.log(`Distance: ${dist.toFixed(1)}, Threshold: ${collisionThreshold.toFixed(1)}`);
+        
+        // Use a more aggressive collision detection (0.95 instead of 0.9)
+        if (dist < collisionThreshold * 0.95) {
+            console.log(`COLLISION DETECTED between player and remote player ${remotePlayer.nickname}!`);
             
-            // Always log collisions to help diagnose issues
-            console.log(`Collision: Player (${player.radius.toFixed(1)}) and ${remotePlayer.nickname} (${remotePlayer.radius.toFixed(1)})`);
-            console.log(`Distance: ${dist.toFixed(1)}, Sum of radii: ${collisionThreshold.toFixed(1)}`);
-            
-            // Reduce the size advantage needed to eat
-            if (player.radius > remotePlayer.radius * 1.05) {
-                // Player eats remote player - reduced size advantage requirement to just 5%
-                console.log(`Player eats remote player ${remotePlayer.nickname}`);
+            // Check size difference more aggressively (1.02 instead of 1.05)
+            if (player.radius > remotePlayer.radius * 1.02) {
+                // Player eats remote player
+                console.log(`Player (${player.radius.toFixed(1)}) eats remote player ${remotePlayer.nickname} (${remotePlayer.radius.toFixed(1)})`);
                 player.score += Math.floor(remotePlayer.score || 0);
                 player.radius += remotePlayer.radius * 0.2;
                 player.updateSpeed();
@@ -1013,10 +1016,12 @@ class Game {
                 if (this.multiplayer) {
                     this.multiplayer.sendPlayerState();
                 }
-            } else if (remotePlayer.radius > player.radius * 1.05 && !this.gameOver) {
-                // Remote player eats player - reduced size advantage requirement to just 5%
-                console.log(`Game over: Player (radius ${player.radius.toFixed(1)}) eaten by remote player ${remotePlayer.nickname} (radius ${remotePlayer.radius.toFixed(1)})`);
+            } else if (remotePlayer.radius > player.radius * 1.02 && !this.gameOver) {
+                // Remote player eats player
+                console.log(`Remote player ${remotePlayer.nickname} (${remotePlayer.radius.toFixed(1)}) eats player (${player.radius.toFixed(1)})`);
                 this.endGame("Eaten by " + remotePlayer.nickname);
+            } else {
+                console.log(`Size difference too small to eat: ${(player.radius / remotePlayer.radius).toFixed(2)}x`);
             }
         }
     }
