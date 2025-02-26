@@ -38,6 +38,8 @@ class Player extends Entity {
             'fast': 0,
             'heavy': 0
         };
+        this.color = '#4CAF50'; // Green color for player
+        this.borderColor = '#9C27B0'; // Purple border
     }
 
     updateSpeed() {

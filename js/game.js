@@ -761,6 +761,9 @@ class Game {
         // Restore context state
         this.ctx.restore();
         
+        // Draw scoreboard in the upper right corner
+        this.drawScoreboard();
+        
         // Draw multiplayer status if enabled
         if (this.multiplayerEnabled) {
             this.ctx.fillStyle = '#FFF';
@@ -788,6 +791,111 @@ class Game {
             this.ctx.fillText(`FPS: ${(1000 / (Date.now() - this._lastFrameTime)).toFixed(1)}`, 20, 180);
             this._lastFrameTime = Date.now();
         }
+    }
+
+    // Draw scoreboard in the upper right corner
+    drawScoreboard() {
+        // Get all players (including bots and remote players)
+        const allPlayers = [
+            {
+                name: this.playerName,
+                score: this.player.score,
+                radius: this.player.radius,
+                isPlayer: true,
+                color: this.player.color
+            },
+            ...this.bots.map(bot => ({
+                name: bot.name,
+                score: bot.score,
+                radius: bot.radius,
+                isBot: true,
+                color: bot.color
+            })),
+            ...this.remotePlayers.map(player => ({
+                name: player.nickname || 'Remote Player',
+                score: player.score || 0,
+                radius: player.radius,
+                isRemote: true,
+                color: player.color
+            }))
+        ];
+        
+        // Sort players by score (highest first)
+        allPlayers.sort((a, b) => b.score - a.score);
+        
+        // Limit to top 10 players
+        const topPlayers = allPlayers.slice(0, 10);
+        
+        // Draw scoreboard background
+        const padding = 10;
+        const lineHeight = 25;
+        const width = 200;
+        const height = Math.min(topPlayers.length * lineHeight + padding * 2, 300);
+        const x = this.width - width - padding;
+        const y = padding;
+        
+        // Semi-transparent background
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        this.ctx.fillRect(x, y, width, height);
+        
+        // Draw border
+        this.ctx.strokeStyle = '#444';
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(x, y, width, height);
+        
+        // Draw title
+        this.ctx.fillStyle = '#FFF';
+        this.ctx.font = 'bold 16px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'top';
+        this.ctx.fillText('SCOREBOARD', x + width / 2, y + padding);
+        
+        // Draw player scores
+        this.ctx.font = '14px Arial';
+        this.ctx.textAlign = 'left';
+        
+        topPlayers.forEach((player, index) => {
+            const playerY = y + padding + 25 + index * lineHeight;
+            
+            // Draw rank
+            this.ctx.fillStyle = '#AAA';
+            this.ctx.fillText(`${index + 1}.`, x + 10, playerY);
+            
+            // Draw colored circle for player
+            this.ctx.fillStyle = player.color || '#FFF';
+            this.ctx.beginPath();
+            this.ctx.arc(x + 30, playerY + 7, 7, 0, Math.PI * 2);
+            this.ctx.fill();
+            
+            // Highlight current player
+            if (player.isPlayer) {
+                this.ctx.fillStyle = '#FFFF00';
+            } else {
+                this.ctx.fillStyle = '#FFF';
+            }
+            
+            // Draw player name (truncate if too long)
+            let displayName = player.name;
+            if (displayName.length > 12) {
+                displayName = displayName.substring(0, 10) + '...';
+            }
+            
+            // Add indicator for player type
+            if (player.isPlayer) {
+                displayName += ' (You)';
+            } else if (player.isBot) {
+                displayName += ' (Bot)';
+            } else if (player.isRemote) {
+                displayName += ' (Player)';
+            }
+            
+            this.ctx.fillText(displayName, x + 45, playerY);
+            
+            // Draw score
+            this.ctx.textAlign = 'right';
+            this.ctx.fillText(player.score.toString(), x + width - 10, playerY);
+            this.ctx.textAlign = 'left';
+        });
     }
 
     updateScore() {
