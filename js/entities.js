@@ -40,6 +40,8 @@ class Player extends Entity {
         };
         this.color = '#4CAF50'; // Green color for player
         this.borderColor = '#9C27B0'; // Purple border
+        this.creationTime = Date.now(); // Track when the player was created
+        this.invulnerableTime = 5000; // 5 seconds of invulnerability for new players
     }
 
     updateSpeed() {
@@ -126,6 +128,11 @@ class Player extends Entity {
         
         // Draw towers
         this.towers.forEach(tower => tower.draw(ctx));
+    }
+
+    // Add a method to check if player is in grace period
+    isInvulnerable(currentTime) {
+        return (currentTime - this.creationTime) < this.invulnerableTime;
     }
 }
 
@@ -282,7 +289,7 @@ class Projectile extends Entity {
         super(x, y, 4, '#FFFF00'); // Increased size and changed to yellow for better visibility
         this.speed = 6; // Increased speed
         this.angle = angle;
-        this.damage = damage * 1.5; // Increased damage
+        this.damage = damage * 1.0; // Reduced damage multiplier from 1.5 to 1.0 for better early game balance
         this.distance = 0;
         this.maxDistance = 350; // Increased range
         this.owner = null; // Will be set when fired
@@ -356,7 +363,8 @@ class Bot extends Player {
         this.difficulty = difficulty; // easy, medium, hard
         this.stateColor = '#FFFFFF'; // Color indicator for state
         this.lastTowerPlacement = 0;
-        this.towerPlacementCooldown = this.getDifficultyValue(5000, 3000, 1500); // Cooldown between tower placements
+        // Increase tower placement cooldown to give players more time in early game
+        this.towerPlacementCooldown = this.getDifficultyValue(8000, 6000, 4000); // Increased from 5000, 3000, 1500
         
         // Set bot speed based on difficulty
         this.speed = this.getDifficultyValue(1.0, 1.5, 2.0);

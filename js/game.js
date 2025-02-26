@@ -229,15 +229,34 @@ class Game {
                     break;
             }
             
-            // Random size and speed (bigger = slower)
-            const radius = random(15, 40);
-            const speed = 3 - (radius - 15) / 25 * 2; // Speed between 1-3 based on size
-            const value = Math.floor(radius * 2);
+            // Ensure enemy doesn't spawn too close to a new player
+            const minSpawnDistance = 600; // Minimum distance for enemies to spawn from new players
+            let tooCloseToNewPlayer = false;
             
-            this.enemies.push(new Enemy(x, y, radius, speed, value));
+            const allPlayers = [this.player, ...this.bots, ...this.remotePlayers];
+            for (const player of allPlayers) {
+                // Only check for players in grace period
+                if (player.isInvulnerable && player.isInvulnerable(currentTime)) {
+                    const dist = distance(x, y, player.x, player.y);
+                    if (dist < minSpawnDistance) {
+                        tooCloseToNewPlayer = true;
+                        break;
+                    }
+                }
+            }
             
-            // Increase spawn rate as game progresses (more slowly)
-            this.enemySpawnRate = Math.max(1000, this.enemySpawnRate - 5); // Changed from 500 to 1000 minimum, and from -10 to -5
+            // Only spawn if not too close to a new player
+            if (!tooCloseToNewPlayer) {
+                // Random size and speed (bigger = slower)
+                const radius = random(15, 40);
+                const speed = 3 - (radius - 15) / 25 * 2; // Speed between 1-3 based on size
+                const value = Math.floor(radius * 2);
+                
+                this.enemies.push(new Enemy(x, y, radius, speed, value));
+                
+                // Increase spawn rate as game progresses (more slowly)
+                this.enemySpawnRate = Math.max(1000, this.enemySpawnRate - 5); // Changed from 500 to 1000 minimum, and from -10 to -5
+            }
         }
     }
 
@@ -535,23 +554,31 @@ class Game {
                         projectile.x, projectile.y, projectile.radius,
                         this.player.x, this.player.y, this.player.radius
                     )) {
-                    // Damage player - increased effect
-                    const damageAmount = projectile.damage * 0.5; // Increased damage significantly
-                    this.player.radius -= damageAmount;
                     
-                    // Create hit effect
-                    this.createHitEffect(this.player.x, this.player.y);
-                    
-                    // Log damage for debugging
-                    console.log(`Player hit by projectile for ${damageAmount.toFixed(1)} damage. New radius: ${this.player.radius.toFixed(1)}`);
-                    
-                    // If player gets too small, they die
-                    if (this.player.radius < 10 && !this.gameOver) {
-                        console.log(`Game over: Player (radius ${this.player.radius.toFixed(1)}) killed by projectile from ${projectile.owner ? (projectile.owner.nickname || projectile.owner.name || 'bot') : 'unknown'}`);
-                        this.endGame("Killed by projectile");
+                    // Check if player is in invulnerability period
+                    if (!this.player.isInvulnerable(currentTime)) {
+                        // Damage player - increased effect
+                        const damageAmount = projectile.damage * 0.5; // Reduced total damage with 0.5 coefficient
+                        this.player.radius -= damageAmount;
+                        
+                        // Create hit effect
+                        this.createHitEffect(this.player.x, this.player.y);
+                        
+                        // Log damage for debugging
+                        console.log(`Player hit by projectile for ${damageAmount.toFixed(1)} damage. New radius: ${this.player.radius.toFixed(1)}`);
+                        
+                        // If player gets too small, they die
+                        if (this.player.radius < 10 && !this.gameOver) {
+                            console.log(`Game over: Player (radius ${this.player.radius.toFixed(1)}) killed by projectile from ${projectile.owner ? (projectile.owner.nickname || projectile.owner.name || 'bot') : 'unknown'}`);
+                            this.endGame("Killed by projectile");
+                        }
+                    } else {
+                        // Player is invulnerable - create shield effect but no damage
+                        this.createShieldEffect(this.player.x, this.player.y, this.player.radius);
+                        console.log("Player is invulnerable - no damage taken");
                     }
                     
-                    // Remove projectile
+                    // Remove projectile regardless of invulnerability
                     projectile.markedForDeletion = true;
                 }
                 
@@ -565,31 +592,37 @@ class Game {
                             projectile.x, projectile.y, projectile.radius,
                             player.x, player.y, player.radius
                         )) {
-                            // Damage player - increased effect
-                            const damageAmount = projectile.damage * 0.5; // Increased damage significantly
-                            player.radius -= damageAmount;
-                            
-                            // Create hit effect
-                            this.createHitEffect(player.x, player.y);
-                            
-                            // Log damage for debugging
-                            console.log(`${player.nickname || player.name || 'bot'} hit by projectile for ${damageAmount.toFixed(1)} damage. New radius: ${player.radius.toFixed(1)}`);
-                            
-                            // If player gets too small, they die
-                            if (player.radius < 10) {
-                                // Bot or remote player dies
-                                player.markedForDeletion = true;
+                            // Check if bot/remote player is in invulnerability period
+                            if (!player.isInvulnerable || !player.isInvulnerable(currentTime)) {
+                                // Damage player
+                                const damageAmount = projectile.damage * 0.5;
+                                player.radius -= damageAmount;
                                 
-                                // Award points to the shooter
-                                if (projectile.owner) {
-                                    projectile.owner.score += Math.floor(player.score * 0.5);
-                                    if (projectile.owner === this.player) {
-                                        this.updateScore();
+                                // Create hit effect
+                                this.createHitEffect(player.x, player.y);
+                                
+                                // Log damage for debugging
+                                console.log(`${player.nickname || player.name || 'bot'} hit by projectile for ${damageAmount.toFixed(1)} damage. New radius: ${player.radius.toFixed(1)}`);
+                                
+                                // If player gets too small, they die
+                                if (player.radius < 10) {
+                                    // Bot or remote player dies
+                                    player.markedForDeletion = true;
+                                    
+                                    // Award points to the shooter
+                                    if (projectile.owner) {
+                                        projectile.owner.score += Math.floor(player.score * 0.5);
+                                        if (projectile.owner === this.player) {
+                                            this.updateScore();
+                                        }
                                     }
                                 }
+                            } else {
+                                // Player is invulnerable - create shield effect but no damage
+                                this.createShieldEffect(player.x, player.y, player.radius);
                             }
                             
-                            // Remove projectile
+                            // Remove projectile regardless of invulnerability
                             projectile.markedForDeletion = true;
                             break;
                         }
@@ -739,14 +772,48 @@ class Game {
             });
         }
         
+        // Draw shield effects
+        if (this.shieldEffects && this.shieldEffects.length > 0) {
+            // Update and draw shield effects
+            this.shieldEffects = this.shieldEffects.filter(effect => {
+                const isActive = effect.update();
+                if (isActive) {
+                    effect.draw(this.ctx);
+                }
+                return isActive;
+            });
+        }
+        
         // Draw bots
-        this.bots.forEach(bot => bot.draw(this.ctx));
+        this.bots.forEach(bot => {
+            bot.draw(this.ctx);
+            
+            // Draw invulnerability shield if bot is in grace period
+            const currentTime = Date.now();
+            if (bot.isInvulnerable && bot.isInvulnerable(currentTime)) {
+                this.drawInvulnerabilityShield(this.ctx, bot);
+            }
+        });
         
         // Draw remote players
-        this.remotePlayers.forEach(player => player.draw(this.ctx));
+        this.remotePlayers.forEach(player => {
+            player.draw(this.ctx);
+            
+            // Draw invulnerability shield if remote player is in grace period
+            const currentTime = Date.now();
+            if (player.isInvulnerable && player.isInvulnerable(currentTime)) {
+                this.drawInvulnerabilityShield(this.ctx, player);
+            }
+        });
         
         // Draw player
         this.player.draw(this.ctx);
+        
+        // Draw invulnerability shield if player is in grace period
+        const currentTime = Date.now();
+        if (this.player.isInvulnerable(currentTime)) {
+            this.drawInvulnerabilityShield(this.ctx, this.player);
+        }
         
         // Draw player name
         this.ctx.fillStyle = '#FFF';
@@ -998,7 +1065,7 @@ class Game {
             do {
                 x = random(100, this.worldWidth - 100);
                 y = random(100, this.worldHeight - 100);
-            } while (distance(x, y, this.player.x, this.player.y) < 500);
+            } while (distance(x, y, this.player.x, this.player.y) < 700); // Increased from 500 to 700 for better spawn protection
             
             // Create bot with random name and color
             const botName = this.botNames[i % this.botNames.length];
@@ -1181,6 +1248,55 @@ class Game {
         if (this.debugMode) {
             console.log(`Hit effect at ${x.toFixed(1)}, ${y.toFixed(1)}`);
         }
+    }
+
+    // Add a method to draw invulnerability shield
+    drawInvulnerabilityShield(ctx, entity) {
+        ctx.beginPath();
+        ctx.arc(entity.x, entity.y, entity.radius + 5, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(0, 255, 255, 0.7)';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        
+        // Add a glow effect
+        ctx.beginPath();
+        ctx.arc(entity.x, entity.y, entity.radius + 8, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(0, 255, 255, 0.3)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+
+    // Create a shield effect
+    createShieldEffect(x, y, radius) {
+        // Create a visual shield effect that will be drawn on the canvas
+        const shieldEffect = {
+            x: x,
+            y: y,
+            radius: radius + 5,
+            alpha: 1.0,
+            color: 'rgba(0, 255, 255, 0.5)',
+            update: function() {
+                this.radius += 0.5;
+                this.alpha -= 0.05;
+                return this.alpha > 0;
+            },
+            draw: (ctx) => {
+                ctx.globalAlpha = shieldEffect.alpha;
+                ctx.beginPath();
+                ctx.arc(shieldEffect.x, shieldEffect.y, shieldEffect.radius, 0, Math.PI * 2);
+                ctx.strokeStyle = shieldEffect.color;
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                ctx.globalAlpha = 1.0;
+            }
+        };
+        
+        // Add to a list of effects if we don't have one yet
+        if (!this.shieldEffects) {
+            this.shieldEffects = [];
+        }
+        
+        this.shieldEffects.push(shieldEffect);
     }
 }
 
