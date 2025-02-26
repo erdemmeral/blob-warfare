@@ -766,12 +766,26 @@ class Game {
         
         // Draw multiplayer status if enabled
         if (this.multiplayerEnabled) {
-            this.ctx.fillStyle = '#FFF';
-            this.ctx.font = '12px Arial';
-            this.ctx.textAlign = 'left';
-            this.ctx.textBaseline = 'top';
-            this.ctx.fillText(`Room: ${this.multiplayer.roomId || 'Connecting...'}`, 10, 10);
-            this.ctx.fillText(`Players: ${1 + Object.keys(this.multiplayer.otherPlayers).length}`, 10, 30);
+            // Create a div for room info if it doesn't exist
+            let roomInfoDiv = document.getElementById('roomInfo');
+            if (!roomInfoDiv) {
+                roomInfoDiv = document.createElement('div');
+                roomInfoDiv.id = 'roomInfo';
+                roomInfoDiv.className = 'room-info';
+                document.getElementById('ui').appendChild(roomInfoDiv);
+            }
+            
+            // Update room info content
+            roomInfoDiv.innerHTML = `
+                Room: ${this.multiplayer.roomId || 'Connecting...'}<br>
+                Players: ${1 + Object.keys(this.multiplayer.otherPlayers).length}
+            `;
+        } else {
+            // Remove room info div if not in multiplayer
+            const roomInfoDiv = document.getElementById('roomInfo');
+            if (roomInfoDiv) {
+                roomInfoDiv.remove();
+            }
         }
         
         // Draw debug info if enabled
@@ -834,7 +848,7 @@ class Game {
         const x = this.width - width - padding;
         const y = padding;
         
-        // Semi-transparent background
+        // Semi-transparent background with class-based styling
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
         this.ctx.fillRect(x, y, width, height);
         
@@ -876,7 +890,7 @@ class Game {
             
             // Draw player name (truncate if too long)
             let displayName = player.name || 'Player';
-            if (displayName.length > 8) {
+            if (displayName.length > 6) {
                 displayName = displayName.substring(0, 6) + '..';
             }
             

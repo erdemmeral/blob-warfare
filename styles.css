@@ -38,21 +38,26 @@ body {
 #score {
     position: absolute;
     top: 10px;
-    right: 10px;
+    right: 220px;
     font-size: 24px;
     font-weight: bold;
     color: #fff;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 5px 10px;
+    border-radius: 5px;
+    z-index: 101;
 }
 
 #towers {
     position: absolute;
-    top: 10px;
+    top: 60px;
     left: 10px;
     display: flex;
     flex-direction: column;
     gap: 10px;
     pointer-events: auto;
+    z-index: 101;
 }
 
 #towers button {
@@ -260,6 +265,29 @@ body {
     margin-bottom: 10px;
 }
 
+/* Add styles for room info */
+.room-info {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    z-index: 102;
+}
+
+/* Ensure scoreboard has proper z-index and doesn't overlap */
+.scoreboard {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: rgba(0, 0, 0, 0.7);
+    border-radius: 5px;
+    z-index: 100;
+    pointer-events: none;
+}
+
 /* Mobile-specific styles */
 @media (max-width: 768px) {
     .menu-container {
@@ -281,19 +309,17 @@ body {
     }
     
     #score {
+        top: 10px;
+        right: 220px;
         font-size: 18px;
-        top: 5px;
-        right: 5px;
     }
     
     #towers {
-        top: 10px;
-        left: 10px;
-        flex-direction: column;
-        gap: 5px;
-        background-color: transparent;
-        padding: 0;
-        border-top: none;
+        top: 60px;
+    }
+    
+    .room-info {
+        font-size: 10px;
     }
     
     #towers button {
