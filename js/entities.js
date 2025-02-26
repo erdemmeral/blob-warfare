@@ -357,6 +357,15 @@ class Bot extends Player {
         this.stateColor = '#FFFFFF'; // Color indicator for state
         this.lastTowerPlacement = 0;
         this.towerPlacementCooldown = this.getDifficultyValue(5000, 3000, 1500); // Cooldown between tower placements
+        
+        // Set bot speed based on difficulty
+        this.speed = this.getDifficultyValue(1.0, 1.5, 2.0);
+    }
+
+    // Override updateSpeed to keep bots at constant speed regardless of size
+    updateSpeed() {
+        // Do nothing - keep the speed constant
+        // This prevents bots from slowing down as they grow
     }
 
     getDifficultyValue(easy, medium, hard) {

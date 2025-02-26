@@ -659,12 +659,9 @@ class Game {
                 
                 const dist = distance(tower.x, tower.y, player.x, player.y);
                 if (dist < closestDistance) {
-                    // If the owner is the player, allow attacking any bot regardless of size
-                    // Otherwise, only target players that are smaller than the owner
-                    if (owner === this.player || owner.radius > player.radius * 1.2) {
-                        closestDistance = dist;
-                        closestPlayer = player;
-                    }
+                    // Allow targeting any player regardless of size
+                    closestDistance = dist;
+                    closestPlayer = player;
                 }
             }
             
