@@ -75,8 +75,42 @@ window.addEventListener('DOMContentLoaded', () => {
         // Get canvas element
         const canvas = document.getElementById('gameCanvas');
         
+        // Ensure canvas fills the screen
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        // Add resize listener to keep canvas full screen
+        window.addEventListener('resize', () => {
+            if (currentGame) {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                currentGame.width = canvas.width;
+                currentGame.height = canvas.height;
+            }
+        });
+        
         // Create game instance
         currentGame = new Game(canvas);
+        
+        // Ensure mouse position is tracked correctly
+        canvas.addEventListener('mousemove', (e) => {
+            if (currentGame) {
+                currentGame.mousePosition.x = e.clientX + currentGame.camera.x;
+                currentGame.mousePosition.y = e.clientY + currentGame.camera.y;
+            }
+        });
+        
+        // Add touch support for mobile devices
+        if (isMobile) {
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (e.touches.length > 0 && currentGame) {
+                    const touch = e.touches[0];
+                    currentGame.mousePosition.x = touch.clientX + currentGame.camera.x;
+                    currentGame.mousePosition.y = touch.clientY + currentGame.camera.y;
+                }
+            }, { passive: false });
+        }
         
         // Game loop variables
         let lastTime = 0;

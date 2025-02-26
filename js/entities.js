@@ -55,14 +55,19 @@ class Player extends Entity {
         const dy = mouseY - this.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         
-        if (dist > 0) {
+        // Only move if mouse is far enough away (prevents jittering)
+        if (dist > 5) {
             this.velocity.x = (dx / dist) * this.speed;
             this.velocity.y = (dy / dist) * this.speed;
+            
+            // Update position
+            this.x += this.velocity.x;
+            this.y += this.velocity.y;
+        } else {
+            // If close to target, stop moving
+            this.velocity.x = 0;
+            this.velocity.y = 0;
         }
-
-        // Update position
-        this.x += this.velocity.x;
-        this.y += this.velocity.y;
 
         // Keep player within bounds
         this.x = clamp(this.x, this.radius, worldWidth - this.radius);

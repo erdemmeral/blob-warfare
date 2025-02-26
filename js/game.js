@@ -805,7 +805,7 @@ class Game {
                 color: this.player.color
             },
             ...this.bots.map(bot => ({
-                name: bot.name,
+                name: bot.name || bot.botName,
                 score: bot.score,
                 radius: bot.radius,
                 isBot: true,
@@ -830,7 +830,7 @@ class Game {
         const padding = 10;
         const lineHeight = 25;
         const width = 200;
-        const height = Math.min(topPlayers.length * lineHeight + padding * 2, 300);
+        const height = Math.min(topPlayers.length * lineHeight + padding * 2 + 25, 300);
         const x = this.width - width - padding;
         const y = padding;
         
@@ -875,18 +875,16 @@ class Game {
             }
             
             // Draw player name (truncate if too long)
-            let displayName = player.name;
-            if (displayName.length > 12) {
-                displayName = displayName.substring(0, 10) + '...';
+            let displayName = player.name || 'Player';
+            if (displayName.length > 8) {
+                displayName = displayName.substring(0, 6) + '..';
             }
             
-            // Add indicator for player type
+            // Add indicator for player type (shorter)
             if (player.isPlayer) {
                 displayName += ' (You)';
             } else if (player.isBot) {
-                displayName += ' (Bot)';
-            } else if (player.isRemote) {
-                displayName += ' (Player)';
+                displayName += ' (B)';
             }
             
             this.ctx.fillText(displayName, x + 45, playerY);
@@ -1173,4 +1171,41 @@ class Game {
             console.log(`Hit effect at ${x.toFixed(1)}, ${y.toFixed(1)}`);
         }
     }
-} 
+}
+
+// Main game loop
+let game;
+let lastTime = 0;
+
+function gameLoop(currentTime) {
+    // Initialize lastTime on first run
+    if (!lastTime) {
+        lastTime = currentTime;
+    }
+    
+    // Calculate delta time
+    const deltaTime = currentTime - lastTime;
+    lastTime = currentTime;
+    
+    // Update and draw game
+    if (game) {
+        game.update(currentTime);
+        game.draw();
+    }
+    
+    // Request next frame
+    requestAnimationFrame(gameLoop);
+}
+
+// Initialize game when window loads
+window.addEventListener('load', () => {
+    const canvas = document.getElementById('gameCanvas');
+    if (canvas) {
+        game = new Game(canvas);
+        
+        // Start game loop
+        requestAnimationFrame(gameLoop);
+    } else {
+        console.error('Canvas element not found!');
+    }
+}); 
